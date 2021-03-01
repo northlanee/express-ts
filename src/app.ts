@@ -1,8 +1,9 @@
 import express from "express";
 import mongoose from "mongoose";
-import errorMiddleware from "./middleware/error.middleware";
+import cookieParser from "cookie-parser";
 
-import Controller from "./interfaces/controller.interface";
+import { errorMiddleware } from "./middleware";
+import { Controller } from "./interfaces";
 
 class App {
   public app: express.Application;
@@ -18,6 +19,7 @@ class App {
 
   private initializeMiddleware() {
     this.app.use(express.json());
+    this.app.use(cookieParser());
   }
 
   private initializeControllers(conrollers: Controller[]) {

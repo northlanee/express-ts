@@ -1,13 +1,16 @@
-import express, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, Router } from "express";
+
 import Post from "./post.interface";
 import PostModel from "./posts.model";
-import HttpException from "../../exceptions/httpException";
-import validationMiddleware from "../../middleware/validation.middleware";
 import PostDto from "./post.dto";
 
-class PostsController {
+import { HttpException } from "../../exceptions";
+import { validationMiddleware, authMiddleware } from "../../middleware";
+import { RequestWithUser } from "../../interfaces";
+import { Controller } from "../../interfaces";
+class PostsController implements Controller {
   public path = "/posts";
-  public router = express.Router();
+  public router = Router();
 
   constructor() {
     this.initializeRoutes();
@@ -15,14 +18,21 @@ class PostsController {
 
   private initializeRoutes() {
     this.router.get(this.path, this.getAllPosts);
-    this.router.post(this.path, validationMiddleware(PostDto), this.createPost);
     this.router.get(`${this.path}/:id`, this.getPost);
+
+    this.router.post(
+      this.path,
+      authMiddleware,
+      validationMiddleware(PostDto),
+      this.createPost
+    );
     this.router.patch(
       `${this.path}/:id`,
+      authMiddleware,
       validationMiddleware(PostDto, true),
       this.modifyPost
     );
-    this.router.delete(`${this.path}/:id`, this.deletePost);
+    this.router.delete(`${this.path}/:id`, authMiddleware, this.deletePost);
   }
 
   private async getAllPosts(req: Request, res: Response) {
@@ -30,7 +40,7 @@ class PostsController {
     res.json(posts);
   }
 
-  private async createPost(req: Request, res: Response) {
+  private async createPost(req: RequestWithUser, res: Response) {
     const postData: Post = req.body;
     const post = new PostModel(postData);
     await post.save();
@@ -44,7 +54,11 @@ class PostsController {
     res.json(post);
   }
 
-  private async modifyPost(req: Request, res: Response, next: NextFunction) {
+  private async modifyPost(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction
+  ) {
     const id = req.params.id;
     const postData = req.body;
     const post = await PostModel.findOneAndUpdate({ _id: id }, postData, {
@@ -54,7 +68,11 @@ class PostsController {
     res.json(post);
   }
 
-  private async deletePost(req: Request, res: Response, next: NextFunction) {
+  private async deletePost(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction
+  ) {
     const id = req.params.id;
     const post = await PostModel.findOneAndDelete({ _id: id });
     if (!post) return next(new HttpException(404, "Post not found"));

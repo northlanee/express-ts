@@ -3,10 +3,11 @@ import "dotenv/config";
 
 import { validateEnv } from "./utils/validateEnv";
 
-import PostsController from "./bus/posts/posts.controller";
+import { PostsController } from "./bus/posts";
+import AuthController from "./bus/auth/auth.controller";
 
 validateEnv();
 
-const app = new App([new PostsController()]);
+const app = new App([new PostsController(), new AuthController()]);
 
 app.listen();
